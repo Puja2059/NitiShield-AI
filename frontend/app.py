@@ -32,9 +32,9 @@ def search_legal_documents(question, language="English"):
 
     if not isinstance(question, str) or not question.strip():
         if nepali:
-            return None, "कृपया खोज्नुअघि प्रश्न लेख्नुहोस्।"
+            return None, "कृपया खोज्नुअघि प्रश्न लेख्नुहोस्।", None
 
-        return None, "Please enter a question before searching."
+        return None, "Please enter a question before searching.", None
 
     try:
         response = requests.post(
@@ -48,46 +48,46 @@ def search_legal_documents(question, language="English"):
             return None, (
                 "कानुनी खोज ब्याकएन्ड चलिरहेको छैन। "
                 "कृपया Flask ब्याकएन्ड सुरु गरेर फेरि प्रयास गर्नुहोस्।"
-            )
+            ), None
 
         return None, (
             "The legal search backend is not running. "
             "Please start the Flask backend and try again."
-        )
+        ), None
     except requests.exceptions.Timeout:
         if nepali:
             return None, (
                 "कानुनी खोज ब्याकएन्डबाट उत्तर आउन धेरै समय लाग्यो। "
                 "कृपया फेरि प्रयास गर्नुहोस्।"
-            )
+            ), None
 
         return None, (
             "The legal search backend took too long to respond. "
             "Please try again."
-        )
+        ), None
     except requests.exceptions.RequestException as error:
         if nepali:
-            return None, f"कानुनी खोज ब्याकएन्डमा समस्या भयो: {error}"
+            return None, f"कानुनी खोज ब्याकएन्डमा समस्या भयो: {error}", None
 
-        return None, f"Could not contact the legal search backend: {error}"
+        return None, f"Could not contact the legal search backend: {error}", None
 
     try:
         payload = response.json()
     except ValueError:
         if nepali:
-            return None, "कानुनी खोज ब्याकएन्डले अमान्य उत्तर दियो।"
+            return None, "कानुनी खोज ब्याकएन्डले अमान्य उत्तर दियो।", None
 
-        return None, "The legal search backend returned an invalid response."
+        return None, "The legal search backend returned an invalid response.", None
 
     if not isinstance(payload, dict) or not isinstance(
         payload.get("results"), list
     ):
         if nepali:
-            return None, "कानुनी खोज ब्याकएन्डले अमान्य उत्तर दियो।"
+            return None, "कानुनी खोज ब्याकएन्डले अमान्य उत्तर दियो।", None
 
-        return None, "The legal search backend returned an invalid response."
+        return None, "The legal search backend returned an invalid response.", None
 
-    return payload["results"], None
+    return payload["results"], None, payload.get("answer")
 
 
 def summarize_legal_text(text, question, max_chars=520):
@@ -1456,21 +1456,21 @@ elif st.session_state.page == "Chatbot":
             }
         )
 
-        results, error_message = search_legal_documents(
+        results, error_message, answer = search_legal_documents(
             user_question,
             detect_question_language(
                 user_question,
                 st.session_state.language,
             ),
         )
-        response = error_message or format_search_results(
-            results,
-            detect_question_language(
+        response = error_message or answer or format_search_results(
+                results,
+                detect_question_language(
+                    user_question,
+                    st.session_state.language,
+                ),
                 user_question,
-                st.session_state.language,
-            ),
-            user_question,
-        )
+            )
 
         st.session_state.chat_history.append(
             {
