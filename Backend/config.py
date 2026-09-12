@@ -1,20 +1,27 @@
 from pathlib import Path
+import os
 
 
-# Main backend directory
 BASE_DIR = Path(__file__).resolve().parent
 
-# Folder containing original legal PDFs
-LEGAL_DOCUMENTS_DIR = BASE_DIR / "legal_documents"
+PROJECT_ROOT = BASE_DIR.parent
 
-# ChromaDB persistent storage
-CHROMA_DIR = BASE_DIR / "chroma_db"
 
-# SQLite database folder
+
+# Folder for SQLite database files
 DATA_DIR = BASE_DIR / "data"
-DATA_DIR.mkdir(exist_ok=True)
+DATA_DIR.mkdir(parents=True, exist_ok=True)
 
-# SQLite database file
+
+# Folder containing original legal PDF documents
+LEGAL_DOCUMENTS_DIR = BASE_DIR / "legal_documents"
+LEGAL_DOCUMENTS_DIR.mkdir(parents=True, exist_ok=True)
+
+
+# Folder for ChromaDB persistent vector storage
+CHROMA_DB_PATH = BASE_DIR / "chroma_db"
+CHROMA_DB_PATH.mkdir(parents=True, exist_ok=True)
+
 SQLITE_DB_PATH = DATA_DIR / "legal_metadata.db"
 
 # ChromaDB collection name
@@ -36,8 +43,3 @@ BM25_TOP_K = 8
 
 # Final number of combined results
 FINAL_TOP_K = 5
-
-# External search fallback
-EXTERNAL_SEARCH_ENABLED = True
-EXTERNAL_SEARCH_TOP_K = 5
-VECTOR_MATCH_DISTANCE_THRESHOLD = 0.8
