@@ -36,6 +36,11 @@ def search():
 
 	return jsonify({
 		"question": question.strip(),
+		"source": (
+			"external"
+			if results and results[0].get("retrieval_method") == "external"
+			else "local_documents"
+		),
 		"results": results,
 	})
 

@@ -36,3 +36,8 @@ BM25_TOP_K = 8
 
 # Final number of combined results
 FINAL_TOP_K = 5
+
+# External search fallback
+EXTERNAL_SEARCH_ENABLED = True
+EXTERNAL_SEARCH_TOP_K = 5
+VECTOR_MATCH_DISTANCE_THRESHOLD = 0.8

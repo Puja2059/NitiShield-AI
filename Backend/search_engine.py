@@ -1,5 +1,8 @@
 import chromadb
 import numpy as np
+from json import loads
+from urllib.parse import quote_plus
+from urllib.request import Request, urlopen
 
 from rank_bm25 import BM25Okapi
 from sentence_transformers import SentenceTransformer
@@ -11,6 +14,9 @@ from config import (
     VECTOR_TOP_K,
     BM25_TOP_K,
     FINAL_TOP_K,
+    EXTERNAL_SEARCH_ENABLED,
+    EXTERNAL_SEARCH_TOP_K,
+    VECTOR_MATCH_DISTANCE_THRESHOLD,
 )
 
 from database import get_all_chunks
@@ -199,4 +205,74 @@ class LegalSearchEngine:
             reverse=True,
         )
 
-        return final_results[:FINAL_TOP_K]
+        relevant_results = [
+            result
+            for result in final_results
+            if result.get("bm25_score", 0) > 0
+            or result.get("vector_distance", float("inf"))
+            <= VECTOR_MATCH_DISTANCE_THRESHOLD
+        ]
+
+        if relevant_results:
+            return relevant_results[:FINAL_TOP_K]
+
+        return self.external_search(question)
+
+    def external_search(self, question):
+        """Search an external source when local legal documents do not match."""
+
+        if not EXTERNAL_SEARCH_ENABLED or not question.strip():
+            return []
+
+        url = (
+            "https://api.duckduckgo.com/?q="
+            f"{quote_plus(question)}&format=json&no_html=1&skip_disambig=1"
+        )
+        request = Request(
+            url,
+            headers={"User-Agent": "NitiShield-AI/1.0"},
+        )
+
+        try:
+            with urlopen(request, timeout=8) as response:
+                payload = loads(response.read().decode("utf-8"))
+        except Exception:
+            return []
+
+        external_results = []
+
+        if payload.get("AbstractText"):
+            external_results.append(
+                {
+                    "chunk_id": payload.get("AbstractURL", "external-abstract"),
+                    "text": payload["AbstractText"],
+                    "metadata": {
+                        "title": payload.get("Heading", "External source"),
+                        "url": payload.get("AbstractURL", ""),
+                        "source": "DuckDuckGo",
+                    },
+                    "retrieval_method": "external",
+                }
+            )
+
+        for topic in payload.get("RelatedTopics", []):
+            if len(external_results) >= EXTERNAL_SEARCH_TOP_K:
+                break
+
+            if not topic.get("Text") or not topic.get("FirstURL"):
+                continue
+
+            external_results.append(
+                {
+                    "chunk_id": topic["FirstURL"],
+                    "text": topic["Text"],
+                    "metadata": {
+                        "title": "External source",
+                        "url": topic["FirstURL"],
+                        "source": "DuckDuckGo",
+                    },
+                    "retrieval_method": "external",
+                }
+            )
+
+        return external_results[:EXTERNAL_SEARCH_TOP_K]
