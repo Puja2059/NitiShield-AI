@@ -1,3 +1,5 @@
+import re
+
 from flask import Flask, jsonify, request
 
 from search_engine import LegalSearchEngine
@@ -5,6 +7,10 @@ from search_engine import LegalSearchEngine
 
 app = Flask(__name__)
 search_engine = None
+GREETING_PATTERN = re.compile(
+	 r"^(hello|hi|hey|namaste)( there)?[!.?]*$",
+	 re.IGNORECASE,
+)
 
 
 def get_search_engine():
@@ -28,14 +34,27 @@ def search():
 	if not isinstance(question, str) or not question.strip():
 		return jsonify({"error": "Question must be a non-empty string."}), 400
 
+	question = question.strip()
+
+	if GREETING_PATTERN.fullmatch(question):
+		return jsonify({
+			"question": question,
+			"answer": (
+				"Hello! I can help you search legal information "
+				"from the provided documents and trusted external sources."
+			),
+			"source": "assistant",
+			"results": [],
+		})
+
 	try:
-		results = get_search_engine().hybrid_search(question.strip())
+		results = get_search_engine().hybrid_search(question)
 	except Exception:
 		app.logger.exception("Legal search failed")
 		return jsonify({"error": "Legal search failed."}), 500
 
 	return jsonify({
-		"question": question.strip(),
+		"question": question,
 		"source": (
 			"external"
 			if results and results[0].get("retrieval_method") == "external"
