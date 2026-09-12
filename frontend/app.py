@@ -141,8 +141,36 @@ def summarize_legal_text(text, question, max_chars=520):
     return summary
 
 
+def explain_in_simple_terms(text, question, max_chars=360):
+    """Turn a retrieved legal excerpt into a short plain-language explanation."""
+
+    summary = summarize_legal_text(text, question, max_chars=max_chars)
+
+    replacements = [
+        (r"\bthe controller\b", "the responsible authority"),
+        (r"\bcontroller\b", "responsible authority"),
+        (r"\bsubscriber\b", "certificate holder"),
+        (r"\bshall\b", "must"),
+        (r"\bherein\b", "in this law"),
+        (r"\bthereof\b", "of it"),
+        (r"\bpursuant to\b", "under"),
+        (r"\bprior to\b", "before"),
+        (r"\bsubsequent to\b", "after"),
+        (r"\bnotify\b", "tell"),
+        (r"\bcommence\b", "start"),
+        (r"\bterminate\b", "end"),
+        (r"\brevoke\b", "cancel"),
+        (r"\brevoked\b", "cancelled"),
+    ]
+
+    for pattern, replacement in replacements:
+        summary = re.sub(pattern, replacement, summary, flags=re.IGNORECASE)
+
+    return summary
+
+
 def format_search_results(results, language="English", question=""):
-    """Format concise, question-focused excerpts from retrieved legal results."""
+    """Format retrieved legal results as a plain-language chatbot answer."""
 
     nepali = language == "नेपाली"
 
@@ -154,8 +182,7 @@ def format_search_results(results, language="English", question=""):
 
     if nepali:
         formatted_results = [
-            "तपाईंको प्रश्नसँग सम्बन्धित कानुनी व्याख्या "
-            "(मूल कानुनी अंशसहित):\n"
+            "**सरल भाषामा:**\n"
         ]
         section_label = "दफा"
         page_label = "पृष्ठ"
@@ -165,7 +192,7 @@ def format_search_results(results, language="English", question=""):
         unavailable_text = "कानुनी पाठ उपलब्ध छैन"
     else:
         formatted_results = [
-            "Based on the relevant legal provisions:\n"
+            "**In simple terms:**\n"
         ]
         section_label = "Section"
         page_label = "Page"
@@ -174,10 +201,25 @@ def format_search_results(results, language="English", question=""):
         unavailable_document = "Document name unavailable"
         unavailable_text = "Legal text unavailable"
 
-    for index, result in enumerate(results[:3], start=1):
-        if not isinstance(result, dict):
-            continue
+    usable_results = [
+        result for result in results if isinstance(result, dict)
+    ]
 
+    if usable_results:
+        simple_explanation = explain_in_simple_terms(
+            usable_results[0].get("text", ""),
+            question,
+        )
+        if simple_explanation:
+            formatted_results.append(simple_explanation)
+
+    formatted_results.append(
+        "\n**Supporting legal references:**"
+        if not nepali
+        else "\n**सम्बन्धित कानुनी सन्दर्भ:**"
+    )
+
+    for index, result in enumerate(usable_results[:2], start=1):
         metadata = result.get("metadata")
         metadata = metadata if isinstance(metadata, dict) else {}
 
