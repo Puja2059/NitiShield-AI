@@ -1,0 +1,5 @@
+Backend/chroma_db/
+Backend/chroma_db_corrupt_*/
+Backend/data/
+Backend/__pycache__/
+frontend/__pycache__/
