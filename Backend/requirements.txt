@@ -1,0 +1,6 @@
+Flask
+PyMuPDF
+chromadb
+sentence-transformers
+rank-bm25
+numpy
