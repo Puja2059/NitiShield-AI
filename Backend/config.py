@@ -2,24 +2,24 @@ from pathlib import Path
 import os
 
 
-BASE_DIR = Path(__file__).resolve().parent
+CHROMA_DIR = Path(__file__).resolve().parent
 
-PROJECT_ROOT = BASE_DIR.parent
+PROJECT_ROOT = CHROMA_DIR.parent
 
 
 
 # Folder for SQLite database files
-DATA_DIR = BASE_DIR / "data"
+DATA_DIR = CHROMA_DIR / "data"
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 
 # Folder containing original legal PDF documents
-LEGAL_DOCUMENTS_DIR = BASE_DIR / "legal_documents"
+LEGAL_DOCUMENTS_DIR = CHROMA_DIR / "legal_documents"
 LEGAL_DOCUMENTS_DIR.mkdir(parents=True, exist_ok=True)
 
 
 # Folder for ChromaDB persistent vector storage
-CHROMA_DB_PATH = BASE_DIR / "chroma_db"
+CHROMA_DB_PATH = CHROMA_DIR / "chroma_db"
 CHROMA_DB_PATH.mkdir(parents=True, exist_ok=True)
 
 SQLITE_DB_PATH = DATA_DIR / "legal_metadata.db"
